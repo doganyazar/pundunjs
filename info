@@ -1,0 +1,8 @@
+Enable debug logs
+vagrant@vagrant:~/parent/play/pundunjs$ ssh localhost -l admin -p 32771 #(mapped to 8884)
+Welcome to Pundun Command Line Interface
+pundun> logger set_filter debug
+Current filter set to debug
+
+Logs:
+/usr/lib/pundun/log/local.pundun.log

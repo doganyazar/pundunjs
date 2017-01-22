@@ -10,7 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "co": "^4.6.0",
-    "google-protobuf": "^3.1.1",
+    "protobufjs": "^6.5.3",
     "sasl-scram-sha-1": "^1.2.0"
   },
   "devDependencies": {
