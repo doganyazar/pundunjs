@@ -9,7 +9,6 @@
   "author": "Dogan Yazar",
   "license": "MIT",
   "dependencies": {
-    "co": "^4.6.0",
     "protobufjs": "^6.5.3",
     "sasl-scram-sha-1": "^1.2.0"
   },
