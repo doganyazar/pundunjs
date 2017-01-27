@@ -2,7 +2,7 @@
   "name": "pundunjs",
   "version": "1.0.0",
   "description": "Javascript client for pundun",
-  "main": "index.js",
+  "main": "lib/client.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
