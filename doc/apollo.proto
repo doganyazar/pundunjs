@@ -263,7 +263,7 @@ message UpdateInstruction {
     Instruction instruction = 8;
     // empty bytes denote nil. proto3 defaults to 0 for numeric values
     // thus, we use bytes to distinguish if 0 is explictly set.
-    bytes treshold = 14; // encoded big endian uint32
+    bytes threshold = 14; // encoded big endian uint32
     bytes set_value = 15; // encoded big endian uint32
 }
 
