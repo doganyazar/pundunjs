@@ -8,7 +8,7 @@ syntax = "proto3";
 
 message ApolloPdu {
     Version version = 1;
-    int32 transaction_id = 2;
+    uint32 transaction_id = 2;
     oneof procedure {
 	Error error = 3;
 	Response response = 4;
@@ -29,6 +29,10 @@ message ApolloPdu {
 	Seek seek = 19;
 	Next next = 20;
 	Prev prev = 21;
+	AddIndex add_index = 22;
+	RemoveIndex remove_index = 23;
+	IndexRead index_read = 24;
+	ListTables list_tables = 25;
     }
 }
 
@@ -37,10 +41,6 @@ message ApolloPdu {
 // Apollo Procedure Definitions.
 //
 // **************************************************************
-message AuthExchange {
-    bytes payload = 1;
-}
-
 message BatchWrite {
     string table_name = 1;
     repeated Field delete_keys = 2;
@@ -88,13 +88,13 @@ message ReadRange {
     string table_name = 1;
     repeated Field start_key = 2;
     repeated Field end_key = 3;
-    int32 limit	= 4;
+    uint32 limit	= 4;
 }
 
 message ReadRangeN  {
     string table_name = 1;
     repeated Field start_key = 2;
-    int32 n = 3;
+    uint32 n = 3;
 }
 
 message Response {
@@ -105,8 +105,10 @@ message Response {
 	KeyColumnsList	key_columns_list = 4;
 	Fields proplist = 5;
 	KcpIt kcp_it = 6;
+	Postings postings = 7;
+	FieldNames string_list = 8;
     }
-    bool more_data_to_be_sent = 7;
+    bool more_data_to_be_sent = 9;
 }
 
 message TableInfo {
@@ -147,11 +149,37 @@ message Prev {
     bytes it = 1;
 }
 
+message AddIndex {
+    string table_name  = 1;
+    repeated IndexConfig config  = 2;
+}
+
+message RemoveIndex {
+    string table_name  = 1;
+    repeated string columns  = 2;
+}
+
+message IndexRead {
+    string table_name	= 1;
+    string column_name	= 2;
+    string term		= 3;
+    PostingFilter filter = 4;
+}
+
+message ListTables {
+}
+
 // **************************************************************
 //
 // Common IE Definitions.
 //
 // **************************************************************
+enum CharFilter {
+    NFC = 0;
+    NFD = 1;
+    NFKC = 2;
+    NFKD = 3;
+}
 
 enum Comparator {
     DESCENDING = 0;
@@ -196,6 +224,17 @@ enum HashingMethod {
     RENDEZVOUS = 3;
 }
 
+message IndexConfig {
+    string column = 1;
+    IndexOptions options = 2;
+}
+
+message IndexOptions {
+    CharFilter char_filter = 1;
+    Tokenizer tokenizer = 2;
+    TokenFilter token_filter = 3;
+}
+
 message KeyColumnsPair {
     repeated Field key = 1;
     repeated Field columns = 2;
@@ -206,9 +245,34 @@ message KeyColumnsList {
     Continuation continuation = 2;
 }
 
+message Posting {
+    repeated Field key = 1;
+    uint32 timestamp = 2;
+    uint32 frequency = 3;
+    uint32 position = 4;
+}
+
+message Postings {
+    repeated Posting list = 1;
+}
+
+message PostingFilter {
+    SortBy sort_by = 1;
+    // empty bytes denote nil. proto3 defaults to 0 for numeric values
+    // thus, we use bytes to distinguish if 0 is explictly set.
+    bytes start_ts = 2; // encoded big endian uint32
+    bytes end_ts = 3; // encoded big endian uint32
+    uint32 max_postings = 4;
+}
+
 message KcpIt {
     KeyColumnsPair  key_columns_pair = 1;
     bytes it = 2;
+}
+
+enum SortBy {
+    RELEVANCE = 0;
+    TIMESTAMP = 1;
 }
 
 message TableOption {
@@ -220,20 +284,21 @@ message TableOption {
 	Tda tda = 5;
 	Comparator comparator = 6;
 	bool time_series = 7;
-	int32 shards = 8;
+	uint32 num_of_shards = 8;
 	bool distributed = 9;
-	int32 replication_factor = 10;
+	uint32 replication_factor = 10;
 	FieldNames hash_exlude = 11;
 	HashingMethod hashing_method = 12;
+	uint32 ttl = 13;
     }
 }
 
 message Tda {
-    int32 num_of_buckets = 1;
+    uint32 num_of_buckets = 1;
     oneof time_margin {
-	int32 seconds = 2;
-	int32 minutes = 3;
-	int32 hours = 4;
+	uint32 seconds = 2;
+	uint32 minutes = 3;
+	uint32 hours = 4;
     }
     string ts_field = 5;
     TimeUnit precision = 6;
@@ -246,6 +311,30 @@ enum TimeUnit {
     NANOSECOND = 3;
 }
 
+message TokenFilter {
+    TokenTransform transform = 1;
+    repeated string add = 2;
+    repeated string delete = 3;
+    TokenStats stats = 4;
+}
+
+enum Tokenizer {
+    UNICODE_WORD_BOUNDARIES = 0;
+}
+
+enum TokenStats {
+    NOSTATS = 0;
+    UNIQUE = 1;
+    FREQUENCY = 2;
+    POSITION = 3;
+}
+
+enum TokenTransform {
+    LOWERCASE = 0;
+    UPPERCASE = 1;
+    CASEFOLD = 2;
+}
+
 enum Type {
     LEVELDB = 0;
     MEMLEVELDB = 1;
@@ -253,6 +342,7 @@ enum Type {
     MEMLEVELDBWRAPPED = 3;
     LEVELDBTDA = 4;
     MEMLEVELDBTDA = 5;
+    ROCKSDB = 6;
 }
 
 message UpdateInstruction {
@@ -286,19 +376,19 @@ message Value {
 }
 
 message Version {
-    int32 major = 1;
-    int32 minor = 2;
+    uint32 major = 1;
+    uint32 minor = 2;
 }
 
 message Wrapper {
-    int32 num_of_buckets = 1;
+    uint32 num_of_buckets = 1;
     oneof time_margin {
-	int32 seconds = 2;
-	int32 minutes = 3;
-	int32 hours = 4;
+	uint32 seconds = 2;
+	uint32 minutes = 3;
+	uint32 hours = 4;
     }
     oneof size_margin {
-	int32 megabytes = 5;
-	int32 gigabytes = 6;
+	uint32 megabytes = 5;
+	uint32 gigabytes = 6;
     }
 }
